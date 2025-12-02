@@ -211,7 +211,7 @@ export default function MCPExplainer() {
       }
     } catch (error) {
       console.error(error);
-      setAiResponse("Error connecting to AI. Please ensure your API key is set in .env.local and you are running with 'vercel dev'.");
+      setAiResponse(error.message || "Error connecting to AI. Please ensure your API key is set in .env.local and you are running with 'vercel dev'.");
     }
     setIsLoading(false);
   };
