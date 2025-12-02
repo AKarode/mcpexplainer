@@ -297,7 +297,7 @@ export default function MCPExplainer() {
         </p>
 
         <div className="bg-slate-800 rounded-2xl p-6 mb-6">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-start mb-4">
             <button
               onClick={runAnimation}
               disabled={isAnimating}
@@ -334,7 +334,7 @@ export default function MCPExplainer() {
 
             {/* Barrier - only visible after step 2 */}
             <div className={`flex flex-col items-center transition-all duration-500 ${animationStep >= 2 ? 'opacity-100' : 'opacity-0'}`}>
-              <div className="w-1 h-16 bg-red-500 rounded-full" />
+              <div className="w-1 h-16 md:w-16 md:h-1 bg-red-500 rounded-full" />
               <span className="text-red-400 text-xs mt-2">Blocked</span>
             </div>
 
@@ -489,25 +489,22 @@ export default function MCPExplainer() {
               <button
                 key={p.id}
                 onClick={() => setOpenPrimitives(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
-                className={`p-6 rounded-xl transition-all duration-300 text-left border-2 ${isOpen
-                  ? `bg-${p.color}-50 border-${p.color}-500 shadow-lg`
-                  : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm hover:shadow-md'
+                className={`p-6 rounded-xl transition-all duration-300 text-left border-2 group ${isOpen
+                  ? `bg-${p.color}-50 border-${p.color}-500 shadow-lg scale-[1.02]`
+                  : `bg-white border-slate-200 hover:border-${p.color}-400 shadow-md hover:shadow-xl hover:-translate-y-1`
                   }`}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isOpen ? `bg-${p.color}-500` : 'bg-slate-100'
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors duration-300 ${isOpen ? `bg-${p.color}-500` : `bg-slate-100 group-hover:bg-${p.color}-100`
                     }`}>
-                    <p.icon className={`w-6 h-6 ${isOpen ? 'text-white' : 'text-slate-600'}`} />
+                    <p.icon className={`w-6 h-6 transition-colors duration-300 ${isOpen ? 'text-white' : `text-slate-600 group-hover:text-${p.color}-600`}`} />
                   </div>
-                  <span className={`text-lg font-semibold ${isOpen ? `text-${p.color}-700` : 'text-slate-800'}`}>
+                  <span className={`text-lg font-semibold transition-colors duration-300 ${isOpen ? `text-${p.color}-700` : `text-slate-800 group-hover:text-${p.color}-700`}`}>
                     {p.label}
                   </span>
                 </div>
                 {isOpen && (
-                  <p className="text-slate-600 text-sm leading-relaxed">{p.desc}</p>
-                )}
-                {!isOpen && (
-                  <p className="text-slate-400 text-sm">Click to learn more</p>
+                  <p className="text-slate-600 text-sm leading-relaxed animate-fadeIn">{p.desc}</p>
                 )}
               </button>
             );
