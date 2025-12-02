@@ -33,9 +33,10 @@ export default async function handler(request: Request) {
         return new Response(JSON.stringify(response), {
             headers: { 'Content-Type': 'application/json' },
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error);
-        return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+        const errorMessage = error.message || JSON.stringify(error);
+        return new Response(JSON.stringify({ error: errorMessage }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
         });
