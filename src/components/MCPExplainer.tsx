@@ -520,7 +520,7 @@ export default function MCPExplainer() {
             {/* Sampling Flow Diagram */}
             <div className="bg-white rounded-lg p-4 mb-4">
               <p className="text-slate-600 text-xs font-semibold mb-3 text-center">How Sampling Enables Nested Agent Calls</p>
-              <div className="flex items-center justify-between gap-2 text-xs">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-2 text-xs">
                 <div className="flex flex-col items-center">
                   <div className="w-16 h-16 rounded-xl bg-blue-100 border-2 border-blue-400 flex items-center justify-center mb-1">
                     <Users className="w-6 h-6 text-blue-600" />
@@ -528,8 +528,9 @@ export default function MCPExplainer() {
                   <span className="text-slate-600 font-medium">User</span>
                 </div>
 
-                <div className="flex flex-col items-center">
-                  <ArrowRight className="w-4 h-4 text-slate-400 mb-1" />
+                <div className="flex flex-col md:flex-row items-center gap-1">
+                  <ChevronDown className="w-4 h-4 text-slate-400 md:hidden" />
+                  <ArrowRight className="w-4 h-4 text-slate-400 hidden md:block" />
                   <span className="text-slate-400 text-xs">query</span>
                 </div>
 
@@ -541,8 +542,9 @@ export default function MCPExplainer() {
                   <span className="text-slate-400 text-xs">(Context: 100k)</span>
                 </div>
 
-                <div className="flex flex-col items-center">
-                  <ArrowRight className="w-4 h-4 text-slate-400 mb-1" />
+                <div className="flex flex-col md:flex-row items-center gap-1">
+                  <ChevronDown className="w-4 h-4 text-slate-400 md:hidden" />
+                  <ArrowRight className="w-4 h-4 text-slate-400 hidden md:block" />
                   <span className="text-slate-400 text-xs">calls</span>
                 </div>
 
@@ -550,12 +552,13 @@ export default function MCPExplainer() {
                   <div className="w-16 h-16 rounded-xl bg-amber-100 border-2 border-amber-400 flex items-center justify-center mb-1">
                     <Box className="w-6 h-6 text-amber-600" />
                   </div>
-                  <span className="text-slate-600 font-medium">MCP Server</span>
+                  <span className="text-slate-600 font-medium text-center">MCP Server</span>
                   <span className="text-slate-400 text-xs">(Research)</span>
                 </div>
 
-                <div className="flex flex-col items-center">
-                  <ArrowRight className="w-4 h-4 text-emerald-500 mb-1" />
+                <div className="flex flex-col md:flex-row items-center gap-1">
+                  <ChevronDown className="w-4 h-4 text-emerald-500 md:hidden" />
+                  <ArrowRight className="w-4 h-4 text-emerald-500 hidden md:block" />
                   <span className="text-emerald-600 text-xs font-semibold">sampling</span>
                 </div>
 
