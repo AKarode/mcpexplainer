@@ -1,6 +1,91 @@
 // @ts-nocheck
+
+import { Brain, Calendar, Mail, FolderOpen, Lock, Unlock, ChevronDown, ChevronRight, AlertTriangle, Zap, Users, Globe, Clock, Shield, Box, ArrowRight, Quote, ExternalLink, Play, CheckCircle, Send, FileText, Menu, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { Brain, Calendar, Mail, FolderOpen, Lock, Unlock, ChevronDown, ChevronRight, AlertTriangle, Zap, Users, Globe, Clock, Shield, Box, ArrowRight, Quote, ExternalLink, Play, CheckCircle, Send, FileText } from 'lucide-react';
+
+// Navigation sections configuration
+const navSections = [
+  { id: 'isolation', label: 'The Problem' },
+  { id: 'what-is-mcp', label: 'What is MCP' },
+  { id: 'experience', label: 'Experience It' },
+  { id: 'adoption', label: 'Adoption' },
+  { id: 'tradeoffs', label: 'Tradeoffs' },
+  { id: 'future', label: 'Future' },
+];
+
+// Navigation component with progress indicator
+const Navigation = ({ activeSection, scrollProgress }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const scrollToSection = (id) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      setMobileOpen(false);
+    }
+  };
+
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800">
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 h-0.5 bg-amber-500 transition-all duration-150" style={{ width: `${scrollProgress}%` }} />
+
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex items-center justify-between h-14">
+          {/* Logo/Title */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="text-amber-500 font-bold text-lg hover:text-amber-400 transition-colors"
+          >
+            MCP Explained
+          </button>
+
+          {/* Desktop navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {navSections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeSection === section.id
+                  ? 'bg-amber-500/20 text-amber-400'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Mobile menu toggle */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="md:hidden p-2 text-slate-400 hover:text-white"
+          >
+            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+
+        {/* Mobile navigation dropdown */}
+        {mobileOpen && (
+          <div className="md:hidden pb-4 border-t border-slate-800 mt-2 pt-2">
+            {navSections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={`block w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSection === section.id
+                  ? 'bg-amber-500/20 text-amber-400'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+};
 
 const useInView = (threshold = 0.2) => {
   const [inView, setInView] = useState(false);
@@ -18,12 +103,13 @@ const useInView = (threshold = 0.2) => {
   return [ref, inView];
 };
 
-const Section = ({ children, className = "", dark = false }) => {
+const Section = ({ children, className = "", dark = false, id = "" }) => {
   const [ref, inView] = useInView(0.1);
   return (
     <section
       ref={ref}
-      className={`min-h-screen py-16 px-6 md:px-12 transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+      id={id}
+      className={`min-h-screen py-16 px-6 md:px-12 transition-all duration-700 pt-20 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         } ${dark ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-900'} ${className}`}
     >
       <div className="max-w-4xl mx-auto">{children}</div>
@@ -113,7 +199,58 @@ export default function MCPExplainer() {
   const [permissionLevel, setPermissionLevel] = useState(1);
   const [actionCards, setActionCards] = useState([]);
   const [openTradeoffs, setOpenTradeoffs] = useState({ control: false, toolOverload: false, security: false });
+
   const [toolCount, setToolCount] = useState(3);
+  const [protocolLogs, setProtocolLogs] = useState([]);
+  const [showLogs, setShowLogs] = useState(false);
+  const logsEndRef = useRef(null);
+
+  // Navigation state
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState('');
+
+  // Track scroll progress and active section
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setScrollProgress(progress);
+
+      // Determine active section
+      const sectionIds = navSections.map(s => s.id);
+      let currentActive = '';
+      for (const id of sectionIds) {
+        const element = document.getElementById(id);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= 150) {
+            currentActive = id;
+          }
+        }
+      }
+      setActiveSection(currentActive);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial call
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToBottom = () => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (showLogs) {
+      scrollToBottom();
+    }
+  }, [protocolLogs, showLogs]);
+
+  const addLog = (direction, type, content) => {
+    const timestamp = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+    setProtocolLogs(prev => [...prev, { id: Date.now(), timestamp, direction, type, content }]);
+  };
 
   const mockData = {
     calendar: "Today: 10am Team Standup, 2pm Client Call with Acme Corp, 4pm Code Review. Tomorrow: 9am Dentist, 1pm Lunch with Sarah, 3pm Sprint Planning.",
@@ -122,7 +259,13 @@ export default function MCPExplainer() {
   };
 
   const toggleTool = (tool) => {
-    setConnectedTools(prev => ({ ...prev, [tool]: !prev[tool] }));
+    setConnectedTools(prev => {
+      const newState = { ...prev, [tool]: !prev[tool] };
+      addLog('server', 'notifications/tools/list_changed', {
+        tools: Object.keys(newState).filter(k => newState[k]).map(k => k)
+      });
+      return newState;
+    });
     if (connectedTools[tool]) {
       setWritePermissions(prev => ({ ...prev, [tool]: false }));
     }
@@ -132,7 +275,14 @@ export default function MCPExplainer() {
 
   const toggleWrite = (tool) => {
     if (connectedTools[tool]) {
-      setWritePermissions(prev => ({ ...prev, [tool]: !prev[tool] }));
+      setWritePermissions(prev => {
+        const newState = { ...prev, [tool]: !prev[tool] };
+        addLog('server', 'notifications/config_changed', {
+          tool,
+          permission: newState[tool] ? 'write' : 'read_only'
+        });
+        return newState;
+      });
       setAiResponse(null);
       setActionCards([]);
     }
@@ -151,6 +301,12 @@ export default function MCPExplainer() {
     if (!userQuery.trim()) return;
     setIsLoading(true);
     setActionCards([]);
+
+    addLog('client', 'sampling/createMessage', {
+      messages: [{ role: 'user', content: userQuery }],
+      maxTokens: 100,
+      includeContext: 'all_servers'
+    });
 
     let systemPrompt = "You are a helpful AI assistant demonstrating MCP capabilities. ";
     const queryLower = userQuery.toLowerCase();
@@ -199,15 +355,27 @@ export default function MCPExplainer() {
       const responseText = data.content?.[0]?.text || "Error getting response";
       setAiResponse(responseText);
 
+      addLog('server', 'sampling/createMessage_result', {
+        role: 'assistant',
+        content: responseText,
+        model: 'claude-3-5-sonnet'
+      });
+
       // Check for write actions and show action cards
       if (writePermissions.calendar && (queryLower.includes('schedule') || queryLower.includes('meeting') || queryLower.includes('add to calendar') || queryLower.includes('create event'))) {
         addActionCard('calendar', 'Calendar event created successfully');
+        addLog('client', 'tools/call', { name: 'calendar_create_event', arguments: { title: 'Meeting', time: 'tomorrow 3pm' } });
+        setTimeout(() => addLog('server', 'tools/call_result', { content: [{ type: 'text', text: 'Event created' }] }), 500);
       }
       if (writePermissions.email && (queryLower.includes('send') || queryLower.includes('email') || queryLower.includes('reply') || queryLower.includes('respond'))) {
         addActionCard('email', 'Email sent successfully');
+        addLog('client', 'tools/call', { name: 'email_send', arguments: { to: 'boss@company.com', subject: 'Re: Q4 Planning' } });
+        setTimeout(() => addLog('server', 'tools/call_result', { content: [{ type: 'text', text: 'Email sent' }] }), 500);
       }
       if (writePermissions.files && (queryLower.includes('create') || queryLower.includes('file') || queryLower.includes('document') || queryLower.includes('save'))) {
         addActionCard('file', 'File created successfully');
+        addLog('client', 'tools/call', { name: 'filesystem_write', arguments: { path: '/docs/new_file.txt', content: '...' } });
+        setTimeout(() => addLog('server', 'tools/call_result', { content: [{ type: 'text', text: 'File written' }] }), 500);
       }
     } catch (error) {
       console.error(error);
@@ -275,8 +443,11 @@ export default function MCPExplainer() {
 
   return (
     <div className="bg-slate-900 text-white min-h-screen">
+      {/* Navigation */}
+      <Navigation activeSection={activeSection} scrollProgress={scrollProgress} />
+
       {/* Hero */}
-      <section className="min-h-screen flex flex-col justify-center items-center px-6 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <section className="min-h-screen flex flex-col justify-center items-center px-6 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 pt-14">
         <h1 className="text-4xl md:text-6xl font-bold text-center mb-6 bg-gradient-to-r from-white via-amber-200 to-amber-500 bg-clip-text text-transparent">
           When AI Learns to Act
         </h1>
@@ -290,7 +461,7 @@ export default function MCPExplainer() {
       </section>
 
       {/* Section 1: The Isolation Problem */}
-      <Section dark>
+      <Section dark id="isolation">
         <h2 className="text-3xl font-bold mb-4">The Isolation Problem</h2>
         <p className="text-slate-300 mb-6">
           AI systems can process information, reason through problems, and generate sophisticated responses. But they have been fundamentally isolated — unable to see your calendar, read your emails, or access your files. Every request for real action hits the same wall.
@@ -466,7 +637,7 @@ export default function MCPExplainer() {
       </Section>
 
       {/* Section 2: What MCP Actually Is */}
-      <Section>
+      <Section id="what-is-mcp">
         <h2 className="text-3xl font-bold mb-4 text-slate-900">What MCP Actually Is</h2>
         <p className="text-slate-600 mb-4">
           The Model Context Protocol is a universal standard for connecting AI systems to external tools and data. Anthropic released it in November 2024, and it has since been adopted by OpenAI, Google DeepMind, and dozens of enterprise platforms.
@@ -513,8 +684,25 @@ export default function MCPExplainer() {
 
         {openPrimitives.sampling && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
+            {/* Key insight callout - moved early per feedback */}
+            <div className="bg-amber-100 border border-amber-300 rounded-lg p-3 mb-4">
+              <p className="text-amber-900 text-sm font-semibold text-center">
+                "Sampling transforms MCP from a tool-calling protocol into an agent orchestration layer."
+              </p>
+            </div>
+
+            {/* MCP Server explanation - added per feedback */}
+            <div className="bg-white rounded-lg p-3 mb-4 border border-amber-200">
+              <p className="text-slate-700 text-sm mb-2">
+                <strong className="text-slate-800">What is an MCP Server?</strong> An MCP server is a program that exposes capabilities (tools, data, or AI reasoning) to AI clients through the MCP protocol. It can be as simple as a script that reads files, or as complex as a research agent that coordinates multiple AI sub-tasks.
+              </p>
+              <p className="text-slate-600 text-xs">
+                When a server "runs" MCP, it can not only respond to tool calls — it can also request AI completions from the client through <strong>sampling</strong>, enabling powerful multi-agent architectures.
+              </p>
+            </div>
+
             <p className="text-amber-800 text-sm mb-4">
-              <strong>Sampling is the primitive that enables Agent-to-Agent communication.</strong> It allows MCP servers to request LLM completions from the client, creating a powerful architecture for distributed AI reasoning.
+              <strong>Sampling enables Agent-to-Agent communication.</strong> It allows MCP servers to request LLM completions from the client, creating distributed AI reasoning where each agent gets its own fresh context.
             </p>
 
             {/* Sampling Flow Diagram */}
@@ -575,22 +763,17 @@ export default function MCPExplainer() {
             <div className="space-y-3 text-sm text-amber-900">
               <div>
                 <strong className="text-amber-800">Context Window Management:</strong>
-                <span className="text-amber-700"> The main agent has limited context (say, 100k tokens). Without sampling, every sub-task consumes that shared context. With sampling, the MCP server spawns a fresh agent with its own context window. The main agent only receives the final result, not the intermediate reasoning. This prevents context exhaustion on complex tasks.</span>
+                <span className="text-amber-700"> The main agent has limited context (say, 100k tokens). Without sampling, every sub-task consumes that shared context. With sampling, the MCP server spawns a fresh agent with its own context window. The main agent only receives the final result, not the intermediate reasoning.</span>
               </div>
 
               <div>
-                <strong className="text-amber-800">Agent-to-Agent Architecture:</strong>
-                <span className="text-amber-700"> Sampling transforms MCP from a tool-calling protocol into an agent orchestration layer. A "research server" can internally spawn multiple specialist agents — one for web search, one for summarization, one for fact-checking — coordinate their outputs, and return a unified result. The client never sees this complexity.</span>
-              </div>
-
-              <div>
-                <strong className="text-amber-800">Cost and Latency Distribution:</strong>
-                <span className="text-amber-700"> Inference happens where it makes sense. Quick tasks stay local; complex reasoning gets delegated. Servers can use cheaper models for routine work and escalate to powerful models only when needed. The user's tokens pay for results, not intermediate steps.</span>
+                <strong className="text-amber-800">Multi-Agent Orchestration:</strong>
+                <span className="text-amber-700"> A "research server" can internally spawn multiple specialist agents — one for web search, one for summarization, one for fact-checking — coordinate their outputs, and return a unified result. The client never sees this complexity.</span>
               </div>
 
               <div>
                 <strong className="text-amber-800">Recursive Capability:</strong>
-                <span className="text-amber-700"> Sub-agents spawned via sampling can themselves call MCP servers, which can request their own sampling. This creates the foundation for deeply nested agent hierarchies — though with significant implications for control and auditability.</span>
+                <span className="text-amber-700"> Sub-agents spawned via sampling can themselves call MCP servers, which can request their own sampling. This creates the foundation for deeply nested agent hierarchies.</span>
               </div>
             </div>
           </div>
@@ -623,11 +806,72 @@ export default function MCPExplainer() {
       </Section>
 
       {/* Section 3: Experience It */}
-      <Section dark>
+      <Section dark id="experience">
         <h2 className="text-3xl font-bold mb-4">Experience It</h2>
         <p className="text-slate-300 mb-6">
           The core principle of MCP is straightforward: <strong className="text-white">context determines capability</strong>. Connect tools below, configure permissions, and ask a question. Observe how the AI's ability to help changes based on what it can access and what it can modify.
         </p>
+
+        {/* Demo Disclaimer */}
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-blue-400 text-xs font-bold">i</span>
+            </div>
+            <div>
+              <p className="text-blue-200 text-sm font-medium mb-1">Demo Environment</p>
+              <p className="text-blue-300/80 text-xs leading-relaxed">
+                This is an <strong className="text-blue-200">illustration using mock data</strong>. The calendar, email, and files shown here are simulated examples. In a real MCP implementation, you would connect to your own accounts (Google Calendar, Gmail, Google Drive, etc.) and the AI would interact with your actual data based on the permissions you grant.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Protocol Log Toggle */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setShowLogs(!showLogs)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${showLogs ? 'bg-slate-700 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+          >
+            <FileText className="w-4 h-4" />
+            {showLogs ? 'Hide Protocol Log' : 'Show Protocol Log'}
+          </button>
+        </div>
+
+        {/* Protocol Log Display */}
+        {showLogs && (
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-4 mb-6 font-mono text-xs overflow-hidden">
+            <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-800">
+              <span className="text-slate-400 font-semibold">MCP Protocol Log</span>
+              <span className="text-slate-600">JSON-RPC 2.0</span>
+            </div>
+            <div className="h-64 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+              {protocolLogs.length === 0 ? (
+                <p className="text-slate-600 italic text-center py-8">Interact with the demo to see protocol messages...</p>
+              ) : (
+                protocolLogs.map((log) => (
+                  <div key={log.id} className="flex gap-3 animate-fadeIn">
+                    <span className="text-slate-600 flex-shrink-0 w-20">{log.timestamp}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`uppercase text-[10px] font-bold px-1.5 py-0.5 rounded ${log.direction === 'client' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'
+                          }`}>
+                          {log.direction}
+                        </span>
+                        <span className="text-slate-300 font-semibold">{log.type}</span>
+                      </div>
+                      <pre className="text-slate-500 overflow-x-auto whitespace-pre-wrap break-all">
+                        {JSON.stringify(log.content, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={logsEndRef} />
+            </div>
+          </div>
+        )}
 
         <div className="bg-slate-800 rounded-2xl p-6 mb-6">
           <p className="text-slate-400 text-sm mb-4">Configure tool connections and permissions:</p>
@@ -794,7 +1038,7 @@ export default function MCPExplainer() {
       </Section>
 
       {/* Section 4: Why It Became the Standard */}
-      <Section>
+      <Section id="adoption">
         <h2 className="text-3xl font-bold mb-4 text-slate-900">Why It Became the Standard</h2>
 
         <QuoteCardLight
@@ -914,7 +1158,7 @@ export default function MCPExplainer() {
       </Section>
 
       {/* Section 5: The Tradeoffs */}
-      <Section dark>
+      <Section dark id="tradeoffs">
         <h2 className="text-3xl font-bold mb-4">The Tradeoffs</h2>
         <p className="text-slate-300 mb-8">
           MCP solves real problems and creates new considerations. The following reflects what practitioners are actively debating in the field.
@@ -990,224 +1234,145 @@ export default function MCPExplainer() {
                 </div>
               </div>
 
-              {/* Degradation Mechanisms */}
-              <div className="space-y-4">
+              {/* Degradation Mechanisms - 2x2 Grid for better visibility */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                 {/* 1. Context Window Consumption */}
-                <div className="bg-slate-900 rounded-lg p-4">
+                <div className="bg-slate-900 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs text-blue-400 font-bold">1</div>
-                    <span className="text-slate-200 text-sm font-medium">Context Window Competition</span>
+                    <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center text-xs text-blue-400 font-bold">1</div>
+                    <span className="text-slate-200 text-xs font-medium">Context Window Competition</span>
                   </div>
-                  <p className="text-slate-400 text-xs mb-3">
-                    Tool definitions don't exist in isolation. They compete with your actual content — codebases in Cursor, PDFs in Claude, conversation history, and the user's query itself. A typical tool consumes 1,000–2,000 tokens; complex tools like Playwright can exceed 11,000 tokens.
-                  </p>
-                  <div className="bg-slate-800 rounded p-3">
-                    <div className="text-xs text-slate-400 mb-2">Realistic context breakdown (200k window):</div>
-
+                  <div className="bg-slate-800 rounded p-2">
                     {/* Stacked bar showing context competition */}
-                    <div className="h-8 bg-slate-700 rounded-full overflow-hidden flex w-full">
+                    <div className="h-6 bg-slate-700 rounded-full overflow-hidden flex w-full mb-2">
                       <div
-                        className="bg-purple-500 flex items-center justify-center text-xs text-white font-medium flex-shrink-0"
+                        className="bg-purple-500 flex items-center justify-center text-[10px] text-white font-medium flex-shrink-0"
                         style={{ width: '15%' }}
                       >
-                        System
+                        Sys
                       </div>
                       <div
-                        className="bg-blue-500 transition-all duration-300 flex items-center justify-center text-xs text-white font-medium flex-shrink-0"
+                        className="bg-blue-500 transition-all duration-300 flex items-center justify-center text-[10px] text-white font-medium flex-shrink-0"
                         style={{ width: `${Math.min(50, toolCount * 3)}%` }}
                       >
-                        Tools ({toolCount})
+                        Tools
                       </div>
                       <div
-                        className="bg-emerald-500 flex items-center justify-center text-xs text-white font-medium flex-shrink-0"
+                        className="bg-emerald-500 flex items-center justify-center text-[10px] text-white font-medium flex-shrink-0"
                         style={{ width: '25%' }}
                       >
-                        Resources
+                        Files
                       </div>
                       <div
-                        className="bg-amber-500 flex items-center justify-center text-xs text-white font-medium flex-shrink-0"
-                        style={{ width: '10%' }}
-                      >
-                        History
-                      </div>
-                      <div
-                        className={`flex-1 flex items-center justify-center text-xs font-medium ${toolCount > 12 ? 'bg-red-500 text-white' : 'bg-slate-600 text-slate-300'
+                        className={`flex-1 flex items-center justify-center text-[10px] font-medium ${toolCount > 12 ? 'bg-red-500 text-white' : 'bg-slate-600 text-slate-300'
                           }`}
                       >
                         {toolCount > 16 ? '!' : 'Free'}
                       </div>
                     </div>
-
-                    {/* Overflow warning */}
-                    {toolCount > 16 && (
-                      <div className="flex items-center gap-2 mt-2 text-red-400 text-xs">
-                        <AlertTriangle className="w-3 h-3" />
-                        <span>Context overflow — tools + fixed content exceed 200k. Resources will be truncated.</span>
-                      </div>
-                    )}
-
-                    {/* Legend */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-purple-500" />
-                        <span className="text-slate-400">System (~30k)</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span className="text-slate-400">Tools (~{(toolCount * 1500).toLocaleString()})</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="text-slate-400">Your files (~50k)</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                        <span className="text-slate-400">History (~20k)</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${toolCount > 12 ? 'bg-red-500' : 'bg-slate-600'}`} />
-                        <span className={toolCount > 12 ? 'text-red-400' : 'text-slate-400'}>Reasoning space</span>
-                      </div>
-                    </div>
-
-                    <p className="text-slate-500 text-xs mt-3">
+                    <p className="text-slate-500 text-[10px]">
                       {toolCount <= 6
-                        ? "Tool definitions are a manageable fraction of total context. Room remains for your resources and model reasoning."
+                        ? "Room for resources & reasoning"
                         : toolCount <= 12
-                          ? "Tool overhead is significant. If you're also loading a codebase or multiple PDFs, context pressure increases. Consider which tools are actually needed for this task."
-                          : "Tool definitions now dominate context allocation. In resource-heavy workflows (Cursor with large codebases, Claude with multiple documents), this forces hard tradeoffs — either fewer tools or truncated resources."
+                          ? "Context pressure increasing"
+                          : "Tools dominate context"
                       }
                     </p>
                   </div>
                 </div>
 
                 {/* 2. Lost in the Middle */}
-                <div className="bg-slate-900 rounded-lg p-4">
+                <div className="bg-slate-900 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-xs text-purple-400 font-bold">2</div>
-                    <span className="text-slate-200 text-sm font-medium">"Lost in the Middle" Problem</span>
+                    <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center text-xs text-purple-400 font-bold">2</div>
+                    <span className="text-slate-200 text-xs font-medium">"Lost in the Middle"</span>
                   </div>
-                  <p className="text-slate-400 text-xs mb-3">
-                    Research shows LLMs struggle to retrieve information placed in the middle of long prompts, even with large context windows. More tools mean more definitions to scan, and relevant tools get "buried."
-                  </p>
-                  <div className="bg-slate-800 rounded p-3">
-                    <div className="flex items-center gap-1 mb-2">
-                      {[...Array(Math.min(toolCount, 20))].map((_, i) => {
+                  <div className="bg-slate-800 rounded p-2">
+                    <div className="flex items-center gap-0.5 mb-1">
+                      {[...Array(Math.min(toolCount, 12))].map((_, i) => {
                         const isStart = i < 2;
-                        const isEnd = i >= Math.min(toolCount, 20) - 2;
-                        const isMiddle = !isStart && !isEnd;
+                        const isEnd = i >= Math.min(toolCount, 12) - 2;
                         return (
                           <div
                             key={i}
-                            className={`flex-1 h-8 rounded transition-all duration-300 flex items-center justify-center text-xs ${isStart ? 'bg-emerald-500/40 text-emerald-300' :
-                              isEnd ? 'bg-emerald-500/40 text-emerald-300' :
-                                'bg-red-500/20 text-red-300/60'
+                            className={`flex-1 h-5 rounded transition-all duration-300 ${isStart || isEnd ? 'bg-emerald-500/40' : 'bg-red-500/20'
                               }`}
-                            title={isMiddle ? 'Lower attention' : 'Higher attention'}
-                          >
-                            {toolCount <= 10 && `T${i + 1}`}
-                          </div>
+                          />
                         );
                       })}
-                      {toolCount > 20 && (
-                        <div className="h-8 px-2 rounded bg-slate-700 flex items-center justify-center text-xs text-slate-400">
-                          +{toolCount - 20}
+                      {toolCount > 12 && (
+                        <div className="h-5 px-1 rounded bg-slate-700 flex items-center justify-center text-[10px] text-slate-400">
+                          +{toolCount - 12}
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center justify-between text-xs mt-2">
-                      <span className="text-emerald-400">↑ High attention</span>
-                      <span className="text-red-400/60">↓ Low attention (middle)</span>
-                      <span className="text-emerald-400">↑ High attention</span>
-                    </div>
-                    <p className="text-slate-500 text-xs mt-2">
+                    <p className="text-slate-500 text-[10px]">
                       {toolCount <= 5
-                        ? "With few tools, the model can attend to all definitions effectively."
-                        : toolCount <= 12
-                          ? "Tools in the middle of the list receive less attention. The model may overlook the right tool even when it's available."
-                          : "Significant attention degradation. Tools in positions 3–" + (toolCount - 2) + " are at high risk of being overlooked, causing incorrect tool selection."
+                        ? "All tools attended"
+                        : "Middle tools overlooked"
                       }
                     </p>
                   </div>
                 </div>
 
                 {/* 3. Selection Complexity / Paralysis */}
-                <div className="bg-slate-900 rounded-lg p-4">
+                <div className="bg-slate-900 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-xs text-amber-400 font-bold">3</div>
-                    <span className="text-slate-200 text-sm font-medium">Selection Complexity & Context Rot</span>
+                    <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center text-xs text-amber-400 font-bold">3</div>
+                    <span className="text-slate-200 text-xs font-medium">Selection Complexity</span>
                   </div>
-                  <p className="text-slate-400 text-xs mb-3">
-                    More options create cognitive overhead. The model may struggle to distinguish similar tools, hesitate between options, or confidently select the wrong tool. This compounds with "context rot" — degraded focus as context grows.
-                  </p>
-                  <div className="bg-slate-800 rounded p-3">
-                    <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-800 rounded p-2">
+                    <div className="grid grid-cols-2 gap-2 mb-1">
                       <div>
-                        <div className="text-xs text-slate-400 mb-1">Hallucination Risk</div>
-                        <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="text-[10px] text-slate-400 mb-1">Hallucination Risk</div>
+                        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 ${toolCount <= 5 ? 'bg-emerald-500' : toolCount <= 12 ? 'bg-amber-500' : 'bg-red-500'
                               }`}
                             style={{ width: `${Math.min(95, 15 + toolCount * 3.5)}%` }}
                           />
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          {toolCount <= 5 ? 'Low' : toolCount <= 12 ? 'Moderate' : 'High'}
-                        </div>
                       </div>
                       <div>
-                        <div className="text-xs text-slate-400 mb-1">Decision Latency</div>
-                        <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="text-[10px] text-slate-400 mb-1">Latency</div>
+                        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 ${toolCount <= 5 ? 'bg-emerald-500' : toolCount <= 12 ? 'bg-amber-500' : 'bg-red-500'
                               }`}
                             style={{ width: `${Math.min(95, 20 + toolCount * 3)}%` }}
                           />
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          {toolCount <= 5 ? 'Fast' : toolCount <= 12 ? 'Slower' : 'Significant delay'}
-                        </div>
                       </div>
                     </div>
-                    <p className="text-slate-500 text-xs mt-3">
-                      {toolCount <= 5
-                        ? "Clear distinctions between tools. Model can select confidently with low error rate."
-                        : toolCount <= 12
-                          ? "Increased chance of misinterpretation. Model may call similar-sounding tools incorrectly or hesitate."
-                          : "High risk of 'paralysis by analysis.' Model may invent answers rather than correctly navigate tool options."
-                      }
+                    <p className="text-slate-500 text-[10px]">
+                      {toolCount <= 5 ? "Clear choices" : toolCount <= 12 ? "Some confusion" : "Analysis paralysis"}
                     </p>
                   </div>
                 </div>
 
                 {/* 4. Compounding Errors in Multi-Step Tasks */}
-                <div className="bg-slate-900 rounded-lg p-4">
+                <div className="bg-slate-900 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center text-xs text-red-400 font-bold">4</div>
-                    <span className="text-slate-200 text-sm font-medium">Multi-Step Task Breakdown</span>
+                    <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center text-xs text-red-400 font-bold">4</div>
+                    <span className="text-slate-200 text-xs font-medium">Multi-Step Breakdown</span>
                   </div>
-                  <p className="text-slate-400 text-xs mb-3">
-                    Complex tasks require multiple tool calls in sequence. Selection errors compound — even 90% per-step accuracy yields only 59% success over 5 steps.
-                  </p>
-                  <div className="bg-slate-800 rounded p-3">
-                    <div className="text-xs text-slate-400 mb-2">Cumulative success rate across 5 steps:</div>
-                    <div className="flex items-center gap-1">
+                  <div className="bg-slate-800 rounded p-2">
+                    <div className="flex items-center gap-0.5 mb-1">
                       {[1, 2, 3, 4, 5].map((step) => {
                         const perStepAccuracy = Math.max(65, 98 - (toolCount - 2) * 1.5) / 100;
                         const cumulativeSuccess = Math.pow(perStepAccuracy, step) * 100;
                         return (
                           <div key={step} className="flex-1 flex flex-col items-center">
-                            <div className="w-full h-16 bg-slate-700/50 rounded flex items-end justify-center p-1">
+                            <div className="w-full h-10 bg-slate-700/50 rounded flex items-end justify-center">
                               <div
-                                className={`w-full rounded transition-all duration-300 ${cumulativeSuccess > 80 ? 'bg-emerald-500' :
+                                className={`w-full rounded-t transition-all duration-300 ${cumulativeSuccess > 80 ? 'bg-emerald-500' :
                                   cumulativeSuccess > 50 ? 'bg-amber-500' : 'bg-red-500'
                                   }`}
                                 style={{ height: `${cumulativeSuccess}%` }}
                               />
                             </div>
-                            <span className="text-xs text-slate-500 mt-1">Step {step}</span>
-                            <span className={`text-xs font-mono ${cumulativeSuccess > 80 ? 'text-emerald-400' :
+                            <span className={`text-[10px] font-mono ${cumulativeSuccess > 80 ? 'text-emerald-400' :
                               cumulativeSuccess > 50 ? 'text-amber-400' : 'text-red-400'
                               }`}>
                               {Math.round(cumulativeSuccess)}%
@@ -1216,6 +1381,7 @@ export default function MCPExplainer() {
                         );
                       })}
                     </div>
+                    <p className="text-slate-500 text-[10px] text-center">Success over 5 steps</p>
                   </div>
                 </div>
               </div>
@@ -1339,7 +1505,7 @@ export default function MCPExplainer() {
       </Section>
 
       {/* Section 6: Where This Goes */}
-      <Section>
+      <Section id="future">
         <h2 className="text-3xl font-bold mb-4 text-slate-900">Where This Goes</h2>
         <p className="text-slate-600 mb-8">
           MCP is one year old and already being used in ways its designers did not fully anticipate. The following capabilities are emerging from the latest specification updates and community development.
